@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/ThemedView';
 export default function HomeScreen() {
   const [timer, setTimer] = useState(30); // Timer starts at 30 seconds
   const [active, setActive] = useState(true); // Timer is active initially
+  const [bluetoothConnected, setBluetoothConnected] = useState(false); // Bluetooth connection status
 
   useEffect(() => {
     if (active && timer > 0) {
@@ -23,6 +24,12 @@ export default function HomeScreen() {
     setActive(false);
   };
 
+  const handleBluetoothConnection = () => {
+    // Simulate Bluetooth connection logic here
+    // This could be a function call to connect to a Bluetooth device
+    setBluetoothConnected(true); // Set to true when connected
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -33,17 +40,27 @@ export default function HomeScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-      <ThemedText type="title">Smart Pepper Spray</ThemedText>
-      <HelloWave/>
+        <ThemedText type="title">Smart Pepper Spray</ThemedText>
+        <HelloWave/>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
-      <ThemedText type="subtitle">Hope you are having a great day!!</ThemedText>
+        <ThemedText type="subtitle">Hope you are having a great day!!</ThemedText>
       </ThemedView>
       <ThemedView style={styles.timerContainer}>
         <ThemedText type="subtitle">Timer: {timer}s</ThemedText>
         <Ionicons size={50} name='time' />
-        <TouchableOpacity style={styles.button} onPress={handleDeactivate}>
+        <TouchableOpacity style={[styles.button, { backgroundColor:'#eb8181'}]} onPress={handleDeactivate}>
           <ThemedText type="default">Deactivate Timer</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+      <ThemedView style={styles.bluetoothContainer}>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: bluetoothConnected ? '#81eb81' : '#eb8181' }]}
+          onPress={handleBluetoothConnection}
+        >
+          <ThemedText type="default">
+            {bluetoothConnected ? 'Connected' : 'Connect to Bluetooth'}
+          </ThemedText>
         </TouchableOpacity>
       </ThemedView>
     </ParallaxScrollView>
@@ -74,11 +91,14 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
     padding: 10,
-    backgroundColor: '#eb8181', // Adjust as needed
     borderRadius: 5,
   },
   buttonText: {
     color: '#f7f7f7',
     fontSize: 16,
+  },
+  bluetoothContainer: {
+    alignItems: 'center',
+    marginTop: 16,
   },
 });
