@@ -32,6 +32,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="userlogin"
+        options={{
+          title: 'Edit',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={focused ? 'pencil' : 'pencil'} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

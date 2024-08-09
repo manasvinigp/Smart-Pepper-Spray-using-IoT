@@ -33,11 +33,11 @@ export default function HomeScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Smart Pepper Spray</ThemedText>
-        <HelloWave />
+      <ThemedText type="title">Smart Pepper Spray</ThemedText>
+      <HelloWave/>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Hope you are having a great day!!</ThemedText>
+      <ThemedText type="subtitle">Hope you are having a great day!!</ThemedText>
       </ThemedView>
       <ThemedView style={styles.timerContainer}>
         <ThemedText type="subtitle">Timer: {timer}s</ThemedText>
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
     padding: 10,
-    backgroundColor: '#a12844', // Adjust as needed
+    backgroundColor: '#eb8181', // Adjust as needed
     borderRadius: 5,
   },
   buttonText: {
