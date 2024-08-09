@@ -10,12 +10,12 @@ import { ThemedView } from '@/components/ThemedView';
 export default function TabTwoScreen() {
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#fad2d2', dark: '#4a0101' }}
-      headerImage={<Ionicons size={310} name="code-slash" style={styles.headerImage} />}>
+      headerBackgroundColor={{ light: '#a12844', dark: '#4d0202' }}
+      headerImage={<Ionicons size={310} style={styles.headerImage} />}>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Profile</ThemedText>
+      <ThemedText type="title">Profile</ThemedText>
       </ThemedView>
-      <ThemedText>Username</ThemedText>
+      <ThemedText type="defaultSemiBold">Username</ThemedText>
       <Collapsible title="File-based routing">
         <ThemedText>
           This app has two screens:{' '}
