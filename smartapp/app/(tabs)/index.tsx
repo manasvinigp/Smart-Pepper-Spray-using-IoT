@@ -64,7 +64,7 @@ export default function HomeScreen() {
       <ThemedView style={styles.timerContainer}>
         <ThemedText type="subtitle">Timer: {timer}s</ThemedText>
         <Ionicons size={50} name='time' />
-        <TouchableOpacity style={[styles.button, { backgroundColor: '#eb8181' }]} onPress={handleDeactivate}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: active ? '#81eb81':'#eb8181'}]} onPress={handleDeactivate}>
           <ThemedText type="default">
             {active ? 'Deactivate Timer' : 'Reactivate Timer'}
           </ThemedText>
@@ -76,7 +76,7 @@ export default function HomeScreen() {
           onPress={handleBluetoothConnection}
         >
           <ThemedText type="default">
-            {bluetoothConnected && bluetoothDeviceName === 'MGP' ? 'Connected to MGP' : 'Connect to Bluetooth'}
+            {bluetoothConnected && bluetoothDeviceName === 'MGP' ? 'Connected to Smart Spray' : 'Connect via Bluetooth'}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
