@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SMS from 'expo-sms';
 import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import ParallaxScrollView from '@/components/ParallaxScrollView';
 
 export default function HomeScreen() {
   const [timer, setTimer] = useState(30); // Timer starts at 30 seconds
@@ -19,23 +21,58 @@ export default function HomeScreen() {
       }, 1000);
       return () => clearInterval(interval);
     }
+    // Timer expired
+    if (timer === 0 && active) {
+      sendSMS(); // Call function to send SMS when timer expires
+      setActive(false); // Stop the timer
+    }
   }, [active, timer]);
 
-  const handleDeactivate = () => {
-    if (active) {
-      setActive(false);
-    } else {
-      setActive(true);
-      setTimer(30); // Reset the timer
+  const sendSMS = async () => {
+    try {
+      const username = await AsyncStorage.getItem('username') || '';
+      const contact1 = await AsyncStorage.getItem('contact1') || '';
+      const contact2 = await AsyncStorage.getItem('contact2') || '';
+    
+      const message = `Hey it's me ${username}. I am in Danger, this is my location, Please help!!`;
+      const contacts = [contact1, contact2].filter(contact => contact.length > 0);
+    
+      console.log('Sending SMS to:', contacts);
+      console.log('Message:', message);
+    
+      if (contacts.length > 0) {
+        const { result } = await SMS.sendSMSAsync(
+          contacts,
+          message
+        );
+    
+        if (result === 'sent') {
+          Alert.alert('Success', 'SMS sent successfully');
+        } else if (result === 'cancelled') {
+          Alert.alert('Cancelled', 'SMS sending was cancelled');
+        } else {
+          Alert.alert('Error', 'Failed to send SMS');
+        }
+      } else {
+        Alert.alert('Error', 'No contacts to send SMS');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send SMS');
+      console.error('Failed to send SMS:', error);
     }
+  };
+
+  const handleDeactivate = () => {
+    setActive(false);
+  };
+
+  const handleReactivate = () => {
+    setActive(true);
+    setTimer(30); // Reset timer to initial value
   };
 
   const handleBluetoothConnection = () => {
     // Simulate Bluetooth connection logic here
-    // This could be a function call to connect to a Bluetooth device
-    // For example, you might use a Bluetooth library to scan and connect
-
-    // Simulate a successful connection to device named 'MGP'
     const deviceName = 'MGP'; // This would come from the Bluetooth library
     if (deviceName === 'MGP') {
       setBluetoothConnected(true);
@@ -64,7 +101,10 @@ export default function HomeScreen() {
       <ThemedView style={styles.timerContainer}>
         <ThemedText type="subtitle">Timer: {timer}s</ThemedText>
         <Ionicons size={50} name='time' />
-        <TouchableOpacity style={[styles.button, { backgroundColor: active ? '#81eb81':'#eb8181'}]} onPress={handleDeactivate}>
+        <TouchableOpacity 
+          style={[styles.button, { backgroundColor: active ? '#81eb81':'#eb8181'}]} 
+          onPress={active ? handleDeactivate : handleReactivate}
+        >
           <ThemedText type="default">
             {active ? 'Deactivate Timer' : 'Reactivate Timer'}
           </ThemedText>
