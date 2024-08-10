@@ -10,6 +10,7 @@ export default function HomeScreen() {
   const [timer, setTimer] = useState(30); // Timer starts at 30 seconds
   const [active, setActive] = useState(true); // Timer is active initially
   const [bluetoothConnected, setBluetoothConnected] = useState(false); // Bluetooth connection status
+  const [bluetoothDeviceName, setBluetoothDeviceName] = useState<string | null>(null); // Bluetooth device name
 
   useEffect(() => {
     if (active && timer > 0) {
@@ -21,13 +22,27 @@ export default function HomeScreen() {
   }, [active, timer]);
 
   const handleDeactivate = () => {
-    setActive(false);
+    if (active) {
+      setActive(false);
+    } else {
+      setActive(true);
+      setTimer(30); // Reset the timer
+    }
   };
 
   const handleBluetoothConnection = () => {
     // Simulate Bluetooth connection logic here
     // This could be a function call to connect to a Bluetooth device
-    setBluetoothConnected(true); // Set to true when connected
+    // For example, you might use a Bluetooth library to scan and connect
+
+    // Simulate a successful connection to device named 'MGP'
+    const deviceName = 'MGP'; // This would come from the Bluetooth library
+    if (deviceName === 'MGP') {
+      setBluetoothConnected(true);
+    } else {
+      setBluetoothConnected(false);
+    }
+    setBluetoothDeviceName(deviceName); // Update with the simulated device name
   };
 
   return (
@@ -49,8 +64,10 @@ export default function HomeScreen() {
       <ThemedView style={styles.timerContainer}>
         <ThemedText type="subtitle">Timer: {timer}s</ThemedText>
         <Ionicons size={50} name='time' />
-        <TouchableOpacity style={[styles.button, { backgroundColor:'#eb8181'}]} onPress={handleDeactivate}>
-          <ThemedText type="default">Deactivate Timer</ThemedText>
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#eb8181' }]} onPress={handleDeactivate}>
+          <ThemedText type="default">
+            {active ? 'Deactivate Timer' : 'Reactivate Timer'}
+          </ThemedText>
         </TouchableOpacity>
       </ThemedView>
       <ThemedView style={styles.bluetoothContainer}>
@@ -59,7 +76,7 @@ export default function HomeScreen() {
           onPress={handleBluetoothConnection}
         >
           <ThemedText type="default">
-            {bluetoothConnected ? 'Connected' : 'Connect to Bluetooth'}
+            {bluetoothConnected && bluetoothDeviceName === 'MGP' ? 'Connected to MGP' : 'Connect to Bluetooth'}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
