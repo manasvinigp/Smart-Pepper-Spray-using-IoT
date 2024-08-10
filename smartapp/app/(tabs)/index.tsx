@@ -3,6 +3,7 @@ import { Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SMS from 'expo-sms';
+import * as Location from 'expo-location';
 import { HelloWave } from '@/components/HelloWave';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -13,6 +14,18 @@ export default function HomeScreen() {
   const [active, setActive] = useState(true); // Timer is active initially
   const [bluetoothConnected, setBluetoothConnected] = useState(false); // Bluetooth connection status
   const [bluetoothDeviceName, setBluetoothDeviceName] = useState<string | null>(null); // Bluetooth device name
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null); // Current location
+
+  useEffect(() => {
+    // Request location permission when the component mounts
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access location was denied');
+        return;
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (active && timer > 0) {
@@ -23,29 +36,69 @@ export default function HomeScreen() {
     }
     // Timer expired
     if (timer === 0 && active) {
-      sendSMS(); // Call function to send SMS when timer expires
+      getCurrentLocation(); // Get the current location
       setActive(false); // Stop the timer
     }
   }, [active, timer]);
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const { coords } = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = coords;
+
+        // Save the current location
+        await AsyncStorage.setItem('lastLocation', JSON.stringify({ latitude, longitude }));
+
+        setLocation({
+          latitude,
+          longitude,
+        });
+        sendSMS(); // Send SMS after retrieving location
+      } else {
+        // Retrieve last known location from AsyncStorage
+        const lastLocation = await AsyncStorage.getItem('lastLocation');
+        if (lastLocation) {
+          const { latitude, longitude } = JSON.parse(lastLocation);
+          setLocation({
+            latitude,
+            longitude,
+          });
+          sendSMS(); // Send SMS after retrieving last location
+        } else {
+          Alert.alert('Error', 'No location data available');
+        }
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+    }
+  };
 
   const sendSMS = async () => {
     try {
       const username = await AsyncStorage.getItem('username') || '';
       const contact1 = await AsyncStorage.getItem('contact1') || '';
       const contact2 = await AsyncStorage.getItem('contact2') || '';
-    
-      const message = `Hey it's me ${username}. I am in Danger, this is my location, Please help!!`;
       const contacts = [contact1, contact2].filter(contact => contact.length > 0);
-    
+
+      let message = `Hey it's me ${username}. I am in Danger, this is my location, Please help!!`;
+
+      if (location) {
+        const { latitude, longitude } = location;
+        const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        message += `\n\nLocation: ${mapsUrl}`;
+      }
+
       console.log('Sending SMS to:', contacts);
       console.log('Message:', message);
-    
+
       if (contacts.length > 0) {
         const { result } = await SMS.sendSMSAsync(
           contacts,
           message
         );
-    
+
         if (result === 'sent') {
           Alert.alert('Success', 'SMS sent successfully');
         } else if (result === 'cancelled') {
