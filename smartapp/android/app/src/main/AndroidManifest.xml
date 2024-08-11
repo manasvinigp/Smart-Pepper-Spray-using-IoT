@@ -16,7 +16,8 @@
   
   <!-- Common -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-  
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
   <!-- BLE Feature -->
   <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
   

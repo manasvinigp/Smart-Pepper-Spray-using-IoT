@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {Image, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemedTextInput } from '@/components/ThemedTextInput';
+import { ThemedText } from '@/components/ThemedText';
+import ParallaxScrollView from '@/components/ParallaxScrollView';
 
 export default function UserLogin() {
   const [username, setUsername] = useState<string>('');
@@ -30,15 +33,22 @@ export default function UserLogin() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>User Information</Text>
-      <TextInput
+  <ParallaxScrollView
+      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerImage={
+        <Image 
+          source={require('@/assets/images/appbg.png')}
+          style={styles.reactLogo}
+        />
+    }>
+      <ThemedText style={styles.header}>User Information</ThemedText>
+      <ThemedTextInput
         placeholder="Username"
         value={username}
         onChangeText={setUsername}
         style={styles.input}
       />
-      <TextInput
+      <ThemedTextInput
         placeholder="Emergency Contact 1"
         value={contact1}
         onChangeText={setContact1}
@@ -46,7 +56,7 @@ export default function UserLogin() {
         keyboardType="numeric"
         maxLength={10}  // Limit input to 10 digits
       />
-      <TextInput
+      <ThemedTextInput
         placeholder="Emergency Contact 2"
         value={contact2}
         onChangeText={setContact2}
@@ -55,9 +65,9 @@ export default function UserLogin() {
         maxLength={10}  // Limit input to 10 digits
       />
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Save</Text>
+        <ThemedText style={styles.buttonText}>Save</ThemedText>
       </TouchableOpacity>
-    </View>
+    </ParallaxScrollView>
   );
 }
 
@@ -85,6 +95,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
+  },
+  reactLogo: {
+    height: 300,
+    width: 410,
+    bottom: -80,
+    left: 0,
+    position: 'absolute',
   },
   buttonText: {
     color: '#ffffff',  // Custom button text color

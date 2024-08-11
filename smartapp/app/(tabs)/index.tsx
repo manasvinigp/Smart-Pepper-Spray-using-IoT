@@ -21,14 +21,18 @@ export default function HomeScreen() {
   const [bluetoothDeviceName, setBluetoothDeviceName] = useState<string | null>(null); // Bluetooth device name
 
   useEffect(() => {
-    // Request location permission when the component mounts
-    (async () => {
+    const requestLocationPermission = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Permission to access location was denied');
         return;
       }
-    })();
+
+      console.log('Location permission granted');
+      getCurrentLocation(); // Call this to get the location
+    };
+
+    requestLocationPermission();
   }, []);
 
   useEffect(() => {
@@ -41,7 +45,6 @@ export default function HomeScreen() {
     } else if (timer === 0 && active) {
       getCurrentLocation(); // Get the current location
       setTimer(30); // Reset the timer to 30 seconds
-      setActive(true); // Reactivate the timer
     }
 
     return () => {
@@ -53,6 +56,7 @@ export default function HomeScreen() {
 
   const getCurrentLocation = async () => {
     try {
+      console.log('Getting current location...');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         const { coords } = await Location.getCurrentPositionAsync({});
@@ -61,11 +65,7 @@ export default function HomeScreen() {
         // Save the current location
         await AsyncStorage.setItem('lastLocation', JSON.stringify({ latitude, longitude }));
 
-        setLocation({
-          latitude,
-          longitude,
-        });
-
+        setLocation({ latitude, longitude });
         console.log('Location retrieved:', { latitude, longitude });
 
         sendSMS(); // Send SMS after retrieving location
@@ -74,10 +74,7 @@ export default function HomeScreen() {
         const lastLocation = await AsyncStorage.getItem('lastLocation');
         if (lastLocation) {
           const { latitude, longitude } = JSON.parse(lastLocation);
-          setLocation({
-            latitude,
-            longitude,
-          });
+          setLocation({ latitude, longitude });
 
           console.log('Using last known location:', { latitude, longitude });
 
@@ -112,10 +109,7 @@ export default function HomeScreen() {
       console.log('Message:', message);
 
       if (contacts.length > 0) {
-        const { result } = await SMS.sendSMSAsync(
-          contacts,
-          message
-        );
+        const { result } = await SMS.sendSMSAsync(contacts, message);
 
         if (result === 'sent') {
           Alert.alert('Success', 'SMS sent successfully');
@@ -143,24 +137,40 @@ export default function HomeScreen() {
   };
 
   const handleBluetoothConnection = async () => {
-    const device = devices.find(d => d.name === 'MGP_04'); // Find the device with the name "MGP_04"
+    if (!startScan || !connectToDevice) {
+      Alert.alert('Error', 'Bluetooth manager is not available');
+      return;
+    }
   
-    if (device) {
+    if (connectedDevice) {
+      // Already connected
+      Alert.alert('Bluetooth', `Already connected to ${bluetoothDeviceName}`);
+      return;
+    }
+  
+    startScan(); // Start scanning for devices
+  
+    // Wait for devices to be discovered
+    setTimeout(async () => {
       try {
-        await connectToDevice(device.id);
-        setBluetoothConnected(true);
-        setBluetoothDeviceName(device.name);
+        const device = devices.find(d => typeof d === 'object' && d.id && d.name); // Ensure the device is an object and has id and name properties
+  
+        if (device) {
+          await connectToDevice(device.id);
+          setBluetoothConnected(true);
+          setBluetoothDeviceName(device.name || 'Unknown device');
+        } else {
+          setBluetoothConnected(false);
+          setBluetoothDeviceName('No device found');
+          Alert.alert('Device Not Found', 'No device found.');
+        }
       } catch (error) {
         setBluetoothConnected(false);
         setBluetoothDeviceName('Error connecting to device');
         console.error('Failed to connect:', error);
         Alert.alert('Connection Error', 'Failed to connect to the device');
       }
-    } else {
-      setBluetoothConnected(false);
-      setBluetoothDeviceName('No device found');
-      Alert.alert('Device Not Found', 'No device with the name MGP_04 found.');
-    }
+    }, 3000); // Delay to allow devices to be discovered
   };
   
 
@@ -184,7 +194,7 @@ export default function HomeScreen() {
         <ThemedText type="subtitle">Timer: {timer}s</ThemedText>
         <Ionicons size={50} name='time' />
         <TouchableOpacity 
-          style={[styles.button, { backgroundColor: active ? '#81eb81':'#eb8181'}]} 
+          style={[styles.button, { backgroundColor: active ? '#81eb81' : '#eb8181'}]} 
           onPress={active ? handleDeactivate : handleReactivate}
         >
           <ThemedText type="default">
@@ -198,7 +208,7 @@ export default function HomeScreen() {
           onPress={handleBluetoothConnection}
         >
           <ThemedText type="default">
-            {bluetoothConnected && bluetoothDeviceName === 'MGP_04' ? 'Connected to Smart Spray' : 'Connect via Bluetooth'}
+            {bluetoothConnected ? `Connected to ${bluetoothDeviceName || 'Bluetooth Device'}` : 'Connect via Bluetooth'}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
@@ -218,8 +228,8 @@ const styles = StyleSheet.create({
   },
   reactLogo: {
     height: 300,
-    width: 400,
-    bottom: -50,
+    width: 410,
+    bottom: -80,
     left: 0,
     position: 'absolute',
   },

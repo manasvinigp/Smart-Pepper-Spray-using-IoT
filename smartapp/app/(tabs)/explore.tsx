@@ -13,7 +13,7 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState<string>('');
   const [contact1, setContact1] = useState<string>('');
   const [contact2, setContact2] = useState<string>('');
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null); // Current location
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -21,7 +21,7 @@ export default function ProfileScreen() {
         const savedUsername = await AsyncStorage.getItem('username');
         const savedContact1 = await AsyncStorage.getItem('contact1');
         const savedContact2 = await AsyncStorage.getItem('contact2');
-        setUsername(savedUsername || ''); // Default to empty string if no data
+        setUsername(savedUsername || '');
         setContact1(savedContact1 || '');
         setContact2(savedContact2 || '');
       } catch (error) {
@@ -29,9 +29,9 @@ export default function ProfileScreen() {
       }
     };
 
-    loadUserData(); // Load data immediately
+    loadUserData();
   }, []);
-  
+
   const getCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -39,7 +39,6 @@ export default function ProfileScreen() {
         const { coords } = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = coords;
 
-        // Save the current location
         await AsyncStorage.setItem('lastLocation', JSON.stringify({ latitude, longitude }));
 
         setLocation({
@@ -48,10 +47,8 @@ export default function ProfileScreen() {
         });
 
         console.log('Location retrieved:', { latitude, longitude });
-
-        sendSMS(); // Send SMS after retrieving location
+        return { latitude, longitude };
       } else {
-        // Retrieve last known location from AsyncStorage
         const lastLocation = await AsyncStorage.getItem('lastLocation');
         if (lastLocation) {
           const { latitude, longitude } = JSON.parse(lastLocation);
@@ -61,42 +58,38 @@ export default function ProfileScreen() {
           });
 
           console.log('Using last known location:', { latitude, longitude });
-
-          sendSMS(); // Send SMS after retrieving last location
+          return { latitude, longitude };
         } else {
           Alert.alert('Error', 'No location data available');
+          return null;
         }
       }
     } catch (error) {
       console.error('Error getting location:', error);
+      return null;
     }
   };
 
   const sendSMS = async () => {
     try {
-      const username = await AsyncStorage.getItem('username') || '';
-      const contact1 = await AsyncStorage.getItem('contact1') || '';
-      const contact2 = await AsyncStorage.getItem('contact2') || '';
+      // Get current location
+      const currentLocation = await getCurrentLocation();
+      
+      // Prepare SMS message
       const contacts = [contact1, contact2].filter(contact => contact.length > 0);
-
       let message = `Hey it's me ${username}. I am in Danger, this is my location, Please help!!`;
 
-      if (location) {
-        const { latitude, longitude } = location;
+      if (currentLocation) {
+        const { latitude, longitude } = currentLocation;
         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${mapsUrl}`;
       } else {
         console.warn('No location available to include in SMS.');
       }
 
-      console.log('Sending SMS to:', contacts);
-      console.log('Message:', message);
-
+      // Send SMS
       if (contacts.length > 0) {
-        const { result } = await SMS.sendSMSAsync(
-          contacts,
-          message
-        );
+        const { result } = await SMS.sendSMSAsync(contacts, message);
 
         if (result === 'sent') {
           Alert.alert('Success', 'SMS sent successfully');
@@ -113,7 +106,6 @@ export default function ProfileScreen() {
       console.error('Failed to send SMS:', error);
     }
   };
-
 
   return (
     <ParallaxScrollView

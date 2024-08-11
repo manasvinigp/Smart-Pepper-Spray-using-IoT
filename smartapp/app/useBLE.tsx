@@ -11,7 +11,9 @@ const useBLE = () => {
   const [devices, setDevices] = useState<any[]>([]);
 
   useEffect(() => {
-    BleManager.start({ showAlert: false });
+    BleManager.start({ showAlert: false })
+      .then(() => console.log('BLE Manager started'))
+      .catch(err => console.error('Failed to start BLE Manager:', err));
 
     if (Platform.OS === 'android') {
       requestPermissions();
@@ -25,11 +27,6 @@ const useBLE = () => {
         }
         return prevDevices;
       });
-
-      // If device name is "MGP_04", attempt to connect
-      if (device.name === 'MGP_04') {
-        connectToDevice(device.id);
-      }
     };
 
     const handleStopScan = () => {
@@ -54,26 +51,32 @@ const useBLE = () => {
 
   const requestPermissions = async () => {
     if (Platform.OS === 'android') {
-      await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      ]);
+      try {
+        await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+      } catch (err) {
+        console.error('Failed to request permissions:', err);
+      }
     }
   };
 
   const startScan = () => {
-    setScanning(true);
-    setDevices([]);
+    if (!scanning) {
+      setScanning(true);
+      setDevices([]);
 
-    BleManager.scan([], 10, true)
-      .then(() => {
-        console.log("Scanning started");
-      })
-      .catch((err) => {
-        console.error("Scan error:", err);
-        setScanning(false);
-      });
+      BleManager.scan([], 10, true)
+        .then(() => {
+          console.log("Scanning started");
+        })
+        .catch((err) => {
+          console.error("Scan error:", err);
+          setScanning(false);
+        });
+    }
   };
 
   const connectToDevice = async (deviceId: string) => {
@@ -83,7 +86,7 @@ const useBLE = () => {
 
       // Retrieve services and characteristics
       await BleManager.retrieveServices(deviceId);
-
+      
       // Notify the user
       const connectedDevice = devices.find(d => d.id === deviceId);
       Alert.alert('Bluetooth', `Connected to ${connectedDevice?.name || "device"}`);
@@ -126,6 +129,10 @@ const useBLE = () => {
     }
   };
 
+  const selectAndConnectDevice = (deviceId: string) => {
+    connectToDevice(deviceId);
+  };
+
   return {
     scanning,
     devices,
@@ -135,6 +142,7 @@ const useBLE = () => {
     disconnectDevice,
     readCharacteristic,
     writeCharacteristic,
+    selectAndConnectDevice,
   };
 };
 
