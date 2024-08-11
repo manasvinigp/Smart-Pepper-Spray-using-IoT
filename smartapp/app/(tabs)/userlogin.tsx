@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {Image, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedTextInput } from '@/components/ThemedTextInput';
 import { ThemedText } from '@/components/ThemedText';
