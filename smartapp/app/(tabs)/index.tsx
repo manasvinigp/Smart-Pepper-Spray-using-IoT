@@ -8,13 +8,17 @@ import { HelloWave } from '@/components/HelloWave';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
+import useBLE from '../useBLE'; // Import your useBLE hook
 
 export default function HomeScreen() {
   const [timer, setTimer] = useState(30); // Timer starts at 30 seconds
   const [active, setActive] = useState(true); // Timer is active initially
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null); // Current location
+
+  // BLE hook usage
+  const { devices, connectedDevice, startScan, connectToDevice, disconnectDevice } = useBLE();
   const [bluetoothConnected, setBluetoothConnected] = useState(false); // Bluetooth connection status
   const [bluetoothDeviceName, setBluetoothDeviceName] = useState<string | null>(null); // Bluetooth device name
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null); // Current location
 
   useEffect(() => {
     // Request location permission when the component mounts
@@ -129,7 +133,6 @@ export default function HomeScreen() {
     }
   };
 
-
   const handleDeactivate = () => {
     setActive(false);
   };
@@ -139,16 +142,27 @@ export default function HomeScreen() {
     setTimer(30); // Reset timer to initial value
   };
 
-  const handleBluetoothConnection = () => {
-    // Simulate Bluetooth connection logic here
-    const deviceName = 'MGP'; // This would come from the Bluetooth library
-    if (deviceName === 'MGP') {
-      setBluetoothConnected(true);
+  const handleBluetoothConnection = async () => {
+    const device = devices.find(d => d.name === 'MGP_04'); // Find the device with the name "MGP_04"
+  
+    if (device) {
+      try {
+        await connectToDevice(device.id);
+        setBluetoothConnected(true);
+        setBluetoothDeviceName(device.name);
+      } catch (error) {
+        setBluetoothConnected(false);
+        setBluetoothDeviceName('Error connecting to device');
+        console.error('Failed to connect:', error);
+        Alert.alert('Connection Error', 'Failed to connect to the device');
+      }
     } else {
       setBluetoothConnected(false);
+      setBluetoothDeviceName('No device found');
+      Alert.alert('Device Not Found', 'No device with the name MGP_04 found.');
     }
-    setBluetoothDeviceName(deviceName); // Update with the simulated device name
   };
+  
 
   return (
     <ParallaxScrollView
@@ -184,7 +198,7 @@ export default function HomeScreen() {
           onPress={handleBluetoothConnection}
         >
           <ThemedText type="default">
-            {bluetoothConnected && bluetoothDeviceName === 'MGP' ? 'Connected to Smart Spray' : 'Connect via Bluetooth'}
+            {bluetoothConnected && bluetoothDeviceName === 'MGP_04' ? 'Connected to Smart Spray' : 'Connect via Bluetooth'}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>

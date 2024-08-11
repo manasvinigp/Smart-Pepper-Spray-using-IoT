@@ -25,6 +25,11 @@ const useBLE = () => {
         }
         return prevDevices;
       });
+
+      // If device name is "MGP_04", attempt to connect
+      if (device.name === 'MGP_04') {
+        connectToDevice(device.id);
+      }
     };
 
     const handleStopScan = () => {
