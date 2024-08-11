@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+      "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+      "bundleIdentifier": "com.anonymous.smartapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -40,7 +41,7 @@
     "plugins": [
       "expo-router",
       "expo-location"
-      ],
+    ],
     "experiments": {
       "typedRoutes": true
     },
