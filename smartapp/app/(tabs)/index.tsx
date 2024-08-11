@@ -28,17 +28,23 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
     if (active && timer > 0) {
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         setTimer(prevTimer => prevTimer - 1);
       }, 1000);
-      return () => clearInterval(interval);
-    }
-    // Timer expired
-    if (timer === 0 && active) {
+    } else if (timer === 0 && active) {
       getCurrentLocation(); // Get the current location
-      setActive(false); // Stop the timer
+      setTimer(30); // Reset the timer to 30 seconds
+      setActive(true); // Reactivate the timer
     }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [active, timer]);
 
   const getCurrentLocation = async () => {
@@ -55,6 +61,9 @@ export default function HomeScreen() {
           latitude,
           longitude,
         });
+
+        console.log('Location retrieved:', { latitude, longitude });
+
         sendSMS(); // Send SMS after retrieving location
       } else {
         // Retrieve last known location from AsyncStorage
@@ -65,6 +74,9 @@ export default function HomeScreen() {
             latitude,
             longitude,
           });
+
+          console.log('Using last known location:', { latitude, longitude });
+
           sendSMS(); // Send SMS after retrieving last location
         } else {
           Alert.alert('Error', 'No location data available');
@@ -88,6 +100,8 @@ export default function HomeScreen() {
         const { latitude, longitude } = location;
         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${mapsUrl}`;
+      } else {
+        console.warn('No location available to include in SMS.');
       }
 
       console.log('Sending SMS to:', contacts);
@@ -114,6 +128,7 @@ export default function HomeScreen() {
       console.error('Failed to send SMS:', error);
     }
   };
+
 
   const handleDeactivate = () => {
     setActive(false);
