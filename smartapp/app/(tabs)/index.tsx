@@ -8,7 +8,7 @@ import { HelloWave } from '@/components/HelloWave';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
-import useBLE from '../useBLE'; // Import your useBLE hook
+import useBLE from '@/hooks/useBLE'; // Import your useBLE hook
 
 export default function HomeScreen() {
   const [timer, setTimer] = useState(30); // Timer starts at 30 seconds
