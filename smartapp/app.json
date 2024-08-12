@@ -42,7 +42,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-location"
+      "expo-location",
+      "./plugins/react-native-ble-manager.plugin.js" 
     ],
     "experiments": {
       "typedRoutes": true
