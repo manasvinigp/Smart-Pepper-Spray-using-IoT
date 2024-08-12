@@ -14,6 +14,7 @@ import com.facebook.soloader.SoLoader
 
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
+import it.innove.BleManagerPackage;
 
 class MainApplication : Application(), ReactApplication {
 
