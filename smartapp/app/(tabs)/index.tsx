@@ -39,58 +39,81 @@ export default function HomeScreen() {
       try {
         const response = await fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/fields/${FIELD_ID}/last.json?api_key=${THINGSPEAK_API_KEY}`);
         const data = await response.json();
-        const value = parseFloat(data.field1);
-        const timestamp = Date.now();
-        setLatestSensorData(value);
-        setFetchTimestamp(timestamp);
+        
+        if (data && data.field1 !== undefined) {
+          const value = parseFloat(data.field1);
+          const dataTimestamp = new Date(data.created_at).getTime(); // Convert the ThingSpeak timestamp to a Unix timestamp
+          const currentTimestamp = Date.now();
+  
+          console.log('Fetched Data Timestamp:', dataTimestamp);
+          console.log('Current Timestamp:', currentTimestamp);
+  
+          if (dataTimestamp !== fetchTimestamp) {
+            setLatestSensorData(value);
+            setFetchTimestamp(dataTimestamp);
+          } else {
+            console.log('No new data. Ignoring old data.');
+          }
+        } else {
+          console.warn('Unexpected data format or missing field1:', data);
+        }
       } catch (error) {
         console.error('Failed to fetch sensor data:', error);
       }
     };
-
+  
     fetchSensorData();
-    const interval = setInterval(fetchSensorData, 15000); // Fetch every 15 seconds
-
+    const interval = setInterval(fetchSensorData, 120000); // Fetch every 120 seconds
+  
     return () => clearInterval(interval);
   }, []);
-
+  
   useEffect(() => {
     if (latestSensorData !== null && fetchTimestamp) {
       const now = Date.now();
-      const isRecent = now - fetchTimestamp < 30000; // Data is recent if fetched within last 30 seconds
-
-      if (isRecent && latestSensorData > 3000) {
-        setActive(true);
-        setTimer(30);  // Reset the timer to 30 seconds
-        setSubtitleText(`In danger! Sending alert to emergency contacts in ${timer} seconds...`);
-      } else if (!isRecent) {
-        console.log('Sensor data is outdated, ignoring.');
-        setActive(false);
+      const isRecent = now - fetchTimestamp < 120000; // Data is recent if fetched within the last 120 seconds (2 minutes)
+      
+      // Logging for debugging
+      console.log('Latest Sensor Data:', latestSensorData);
+      console.log('Is Data Recent:', isRecent);
+      console.log('Fetched Timestamp:', fetchTimestamp);
+  
+      if (isRecent && latestSensorData > 30000) {
+        if (!active) {
+          setActive(true);
+          setTimer(30);  // Reset the timer to 30 seconds
+          setSubtitleText(`In danger! Sending alert to emergency contacts in ${timer} seconds...`);
+        }
+      } else {
+        if (active) {
+          setActive(false);
+          setSubtitleText("Hope you are having a great day!!");
+        }
       }
     }
   }, [latestSensorData, fetchTimestamp]);
-
+  
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
-
+  
     if (active && timer > 0) {
       interval = setInterval(() => {
         setTimer(prevTimer => prevTimer - 1);
       }, 1000);
     } else if (timer === 0 && active) {
       getCurrentLocation();
-      setTimer(30);
       setActive(false);
       setSubtitleText("Hope you are having a great day!!");
       sendSMS();
     }
-
+  
     return () => {
       if (interval) {
         clearInterval(interval);
       }
     };
   }, [active, timer]);
+  
 
   const getCurrentLocation = async () => {
     try {

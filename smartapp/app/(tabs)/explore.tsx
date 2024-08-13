@@ -141,8 +141,9 @@ export default function ProfileScreen() {
       </ThemedView>
       <ThemedView style={styles.webViewContainer}>
         <WebView
-          source={{ uri:  `https://www.chatgpt.com/` }}
-          style={styles.webview}
+         style={styles.webview}
+         originWhitelist={['*']}
+         source={{ html: '<iframe width="450" height="400" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/2625384/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=60&type=line&update=15&api_key=IXNJPIR3R846KR65"></iframe>' }}
         />
       </ThemedView>
     </ParallaxScrollView>
@@ -170,9 +171,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   webViewContainer: {
-    height: 600, // Adjust the height as needed 
+    height: 260, // Adjust the height as needed 
+    width: 675,
     marginTop: 16,
-    alignItems: 'center',
+    marginLeft: -20,
   },
   webview: {
     flex: 1,
