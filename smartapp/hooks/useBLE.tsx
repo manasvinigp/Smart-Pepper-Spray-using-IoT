@@ -87,7 +87,7 @@ const useBLE = () => {
 
     setScanning(true);
     setDevices([]);
-
+    
     BleManager.scan([], 10, true)
       .then(() => {
         console.log("Scanning started");

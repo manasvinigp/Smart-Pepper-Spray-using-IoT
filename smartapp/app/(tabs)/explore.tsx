@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as SMS from 'expo-sms';
@@ -8,12 +8,14 @@ import { Collapsible } from '@/components/Collapsible';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { WebView } from 'react-native-webview'; // Import WebView
 
 export default function ProfileScreen() {
   const [username, setUsername] = useState<string>('');
   const [contact1, setContact1] = useState<string>('');
   const [contact2, setContact2] = useState<string>('');
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -31,6 +33,14 @@ export default function ProfileScreen() {
 
     loadUserData();
   }, []);
+  
+  useEffect(() => {
+    setLoading(false); // No need to fetch the chart data; it's directly included in the WebView
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
 
   const getCurrentLocation = async () => {
     try {
@@ -129,6 +139,12 @@ export default function ProfileScreen() {
           <ThemedText type="default">Send Emergency Alert</ThemedText>
         </TouchableOpacity>
       </ThemedView>
+      <ThemedView style={styles.webViewContainer}>
+        <WebView
+          source={{ uri:  `https://www.chatgpt.com/` }}
+          style={styles.webview}
+        />
+      </ThemedView>
     </ParallaxScrollView>
   );
 }
@@ -152,5 +168,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#eb8181',
     padding: 10,
     borderRadius: 5,
+  },
+  webViewContainer: {
+    height: 600, // Adjust the height as needed 
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  webview: {
+    flex: 1,
   },
 });

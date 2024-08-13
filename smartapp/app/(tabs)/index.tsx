@@ -8,17 +8,18 @@ import { HelloWave } from '@/components/HelloWave';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
-import useBLE from '@/hooks/useBLE'; // Import your useBLE hook
+
+const THINGSPEAK_API_KEY = 'IXNJPIR3R846KR65';  // Replace with your API key
+const CHANNEL_ID = '2625384';       // Replace with your channel ID
+const FIELD_ID = '1';    // Replace with your specific field ID
 
 export default function HomeScreen() {
-  const [timer, setTimer] = useState(30); // Timer starts at 30 seconds
-  const [active, setActive] = useState(true); // Timer is active initially
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null); // Current location
-
-  // BLE hook usage
-  const { devices, connectedDevice, startScan, connectToDevice, disconnectDevice } = useBLE();
-  const [bluetoothConnected, setBluetoothConnected] = useState(false); // Bluetooth connection status
-  const [bluetoothDeviceName, setBluetoothDeviceName] = useState<string | null>(null); // Bluetooth device name
+  const [timer, setTimer] = useState(30);
+  const [active, setActive] = useState(false);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [subtitleText, setSubtitleText] = useState("Hope you are having a great day!!");
+  const [latestSensorData, setLatestSensorData] = useState<number | null>(null);
+  const [fetchTimestamp, setFetchTimestamp] = useState<number | null>(null);
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -27,13 +28,47 @@ export default function HomeScreen() {
         Alert.alert('Permission Denied', 'Permission to access location was denied');
         return;
       }
-
-      console.log('Location permission granted');
-      getCurrentLocation(); // Call this to get the location
+      getCurrentLocation();
     };
 
     requestLocationPermission();
   }, []);
+
+  useEffect(() => {
+    const fetchSensorData = async () => {
+      try {
+        const response = await fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/fields/${FIELD_ID}/last.json?api_key=${THINGSPEAK_API_KEY}`);
+        const data = await response.json();
+        const value = parseFloat(data.field1);
+        const timestamp = Date.now();
+        setLatestSensorData(value);
+        setFetchTimestamp(timestamp);
+      } catch (error) {
+        console.error('Failed to fetch sensor data:', error);
+      }
+    };
+
+    fetchSensorData();
+    const interval = setInterval(fetchSensorData, 15000); // Fetch every 15 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (latestSensorData !== null && fetchTimestamp) {
+      const now = Date.now();
+      const isRecent = now - fetchTimestamp < 30000; // Data is recent if fetched within last 30 seconds
+
+      if (isRecent && latestSensorData > 3000) {
+        setActive(true);
+        setTimer(30);  // Reset the timer to 30 seconds
+        setSubtitleText(`In danger! Sending alert to emergency contacts in ${timer} seconds...`);
+      } else if (!isRecent) {
+        console.log('Sensor data is outdated, ignoring.');
+        setActive(false);
+      }
+    }
+  }, [latestSensorData, fetchTimestamp]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -43,8 +78,11 @@ export default function HomeScreen() {
         setTimer(prevTimer => prevTimer - 1);
       }, 1000);
     } else if (timer === 0 && active) {
-      getCurrentLocation(); // Get the current location
-      setTimer(30); // Reset the timer to 30 seconds
+      getCurrentLocation();
+      setTimer(30);
+      setActive(false);
+      setSubtitleText("Hope you are having a great day!!");
+      sendSMS();
     }
 
     return () => {
@@ -56,29 +94,19 @@ export default function HomeScreen() {
 
   const getCurrentLocation = async () => {
     try {
-      console.log('Getting current location...');
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         const { coords } = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = coords;
-
-        // Save the current location
         await AsyncStorage.setItem('lastLocation', JSON.stringify({ latitude, longitude }));
-
         setLocation({ latitude, longitude });
         console.log('Location retrieved:', { latitude, longitude });
-
-        sendSMS(); // Send SMS after retrieving location
       } else {
-        // Retrieve last known location from AsyncStorage
         const lastLocation = await AsyncStorage.getItem('lastLocation');
         if (lastLocation) {
           const { latitude, longitude } = JSON.parse(lastLocation);
           setLocation({ latitude, longitude });
-
           console.log('Using last known location:', { latitude, longitude });
-
-          sendSMS(); // Send SMS after retrieving last location
         } else {
           Alert.alert('Error', 'No location data available');
         }
@@ -101,12 +129,7 @@ export default function HomeScreen() {
         const { latitude, longitude } = location;
         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${mapsUrl}`;
-      } else {
-        console.warn('No location available to include in SMS.');
       }
-
-      console.log('Sending SMS to:', contacts);
-      console.log('Message:', message);
 
       if (contacts.length > 0) {
         const { result } = await SMS.sendSMSAsync(contacts, message);
@@ -129,50 +152,14 @@ export default function HomeScreen() {
 
   const handleDeactivate = () => {
     setActive(false);
+    setSubtitleText("Timer deactivated. Hope you are having a great day!!");
   };
 
   const handleReactivate = () => {
     setActive(true);
-    setTimer(30); // Reset timer to initial value
+    setTimer(30);
+    setSubtitleText(`In danger! Sending alert to emergency contacts in ${timer} seconds...`);
   };
-
-  const handleBluetoothConnection = async () => {
-    if (!startScan || !connectToDevice) {
-      Alert.alert('Error', 'Bluetooth manager is not available');
-      return;
-    }
-  
-    if (connectedDevice) {
-      // Already connected
-      Alert.alert('Bluetooth', `Already connected to ${bluetoothDeviceName}`);
-      return;
-    }
-  
-    startScan(); // Start scanning for devices
-  
-    // Wait for devices to be discovered
-    setTimeout(async () => {
-      try {
-        const device = devices.find(d => typeof d === 'object' && d.id && d.name); // Ensure the device is an object and has id and name properties
-  
-        if (device) {
-          await connectToDevice(device.id);
-          setBluetoothConnected(true);
-          setBluetoothDeviceName(device.name || 'Unknown device');
-        } else {
-          setBluetoothConnected(false);
-          setBluetoothDeviceName('No device found');
-          Alert.alert('Device Not Found', 'No device found.');
-        }
-      } catch (error) {
-        setBluetoothConnected(false);
-        setBluetoothDeviceName('Error connecting to device');
-        console.error('Failed to connect:', error);
-        Alert.alert('Connection Error', 'Failed to connect to the device');
-      }
-    }, 3000); // Delay to allow devices to be discovered
-  };
-  
 
   return (
     <ParallaxScrollView
@@ -185,30 +172,20 @@ export default function HomeScreen() {
       }>
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Smart Pepper Spray</ThemedText>
-        <HelloWave/>
+        <HelloWave />
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Hope you are having a great day!!</ThemedText>
+        <ThemedText type="subtitle">{subtitleText}</ThemedText>
       </ThemedView>
       <ThemedView style={styles.timerContainer}>
         <ThemedText type="subtitle">Timer: {timer}s</ThemedText>
         <Ionicons size={50} name='time' />
         <TouchableOpacity 
-          style={[styles.button, { backgroundColor: active ? '#81eb81' : '#eb8181'}]} 
+          style={[styles.button, { backgroundColor: active ? '#81eb81' : '#eb8181' }]} 
           onPress={active ? handleDeactivate : handleReactivate}
         >
           <ThemedText type="default">
             {active ? 'Deactivate Timer' : 'Reactivate Timer'}
-          </ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
-      <ThemedView style={styles.bluetoothContainer}>
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: bluetoothConnected ? '#81eb81' : '#eb8181' }]}
-          onPress={handleBluetoothConnection}
-        >
-          <ThemedText type="default">
-            {bluetoothConnected ? `Connected to ${bluetoothDeviceName || 'Bluetooth Device'}` : 'Connect via Bluetooth'}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
@@ -241,13 +218,5 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 10,
     borderRadius: 5,
-  },
-  buttonText: {
-    color: '#f7f7f7',
-    fontSize: 16,
-  },
-  bluetoothContainer: {
-    alignItems: 'center',
-    marginTop: 16,
   },
 });
